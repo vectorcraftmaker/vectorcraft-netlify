@@ -2,16 +2,16 @@ import ImageTracer from 'imagetracerjs';
 
 export const PRESETS = {
   logo: {
-    name: '🌟 Ultra-Smooth Logo & Art (Rekomendasi Utama)',
-    description: 'Menghasilkan garis vektor super mulus, tajam, dan bebas bintik pecah.',
+    name: '🌟 Clean Smooth Curved Vector (Rekomendasi Utama)',
+    description: 'Menyatukan warna menjadi kurva lengkung mulus & utuh, bebas bintik pecah.',
     options: {
       corsenabled: false,
-      ltres: 1,
-      qtres: 1,
-      pathomit: 20,
+      ltres: 1.5,
+      qtres: 1.5,
+      pathomit: 30,
       rightangleenhance: true,
       colorsampling: 2,
-      numberofcolors: 16,
+      numberofcolors: 10,
       mincolorratio: 0,
       colorquantcycles: 3,
       layering: 0,
@@ -21,20 +21,20 @@ export const PRESETS = {
       roundcoords: 1,
       viewbox: true,
       blurradius: 3,
-      blurdelta: 30
+      blurdelta: 40
     }
   },
   illustration: {
-    name: '🎨 Vektor Warna Mulus',
-    description: 'Sangat cocok untuk ilustrasi warna, kartun, dan grafis bergaya seni.',
+    name: '🎨 Vektor Kartun & Ilustrasi',
+    description: 'Bentuk bidang warna menyatu yang rapi untuk kartun dan seni vektor.',
     options: {
       corsenabled: false,
-      ltres: 0.8,
-      qtres: 0.8,
-      pathomit: 12,
+      ltres: 1.2,
+      qtres: 1.2,
+      pathomit: 20,
       rightangleenhance: false,
       colorsampling: 2,
-      numberofcolors: 24,
+      numberofcolors: 16,
       colorquantcycles: 3,
       layering: 0,
       strokewidth: 0,
@@ -43,20 +43,20 @@ export const PRESETS = {
       roundcoords: 1,
       viewbox: true,
       blurradius: 2,
-      blurdelta: 20
+      blurdelta: 30
     }
   },
   photo: {
     name: '📸 Foto & High Detail',
-    description: 'Menangkap detail warna realistis dengan kurva halus.',
+    description: 'Untuk foto realistis dengan gradasi warna lebih kompleks.',
     options: {
       corsenabled: false,
-      ltres: 0.3,
-      qtres: 0.3,
-      pathomit: 4,
+      ltres: 0.5,
+      qtres: 0.5,
+      pathomit: 8,
       rightangleenhance: false,
       colorsampling: 2,
-      numberofcolors: 48,
+      numberofcolors: 32,
       colorquantcycles: 4,
       layering: 0,
       strokewidth: 0,
@@ -65,17 +65,17 @@ export const PRESETS = {
       roundcoords: 1,
       viewbox: true,
       blurradius: 1,
-      blurdelta: 15
+      blurdelta: 20
     }
   },
   monochrome: {
-    name: '⬛ Siluet Monokrom',
-    description: 'Tracing hitam-putih mulus untuk cap, logo 1 warna, dan stempel.',
+    name: '⬛ Siluet Monokrom Mulus',
+    description: 'Tracing 1 warna hitam-putih dengan garis melengkung bersih.',
     options: {
       corsenabled: false,
-      ltres: 0.5,
-      qtres: 0.5,
-      pathomit: 20,
+      ltres: 1.5,
+      qtres: 1.5,
+      pathomit: 30,
       rightangleenhance: true,
       colorsampling: 0,
       numberofcolors: 2,
@@ -86,8 +86,8 @@ export const PRESETS = {
       scale: 1,
       roundcoords: 1,
       viewbox: true,
-      blurradius: 2,
-      blurdelta: 20
+      blurradius: 3,
+      blurdelta: 30
     }
   }
 };
@@ -172,17 +172,17 @@ function autoDetectFromImageData(imageData) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
-    colorMap.add(`${r >> 3},${g >> 3},${b >> 3}`);
+    colorMap.add(`${r >> 4},${g >> 4},${b >> 4}`);
   }
 
   const numColors = colorMap.size;
   if (numColors <= 4) {
-    return { preset: 'monochrome', reason: '✨ Terdeteksi: Gambar Monokrom / Hitam-Putih (Preset Mulus Monokrom diterapkan)' };
-  } else if (numColors <= 32) {
-    return { preset: 'logo', reason: '✨ Terdeteksi: Logo / Teks (Preset Ultra-Smooth Logo diterapkan)' };
-  } else if (numColors <= 128) {
-    return { preset: 'illustration', reason: '✨ Terdeteksi: Vektor Grafis / Ilustrasi (Preset Vektor Warna Mulus diterapkan)' };
+    return { preset: 'monochrome', reason: '✨ Terdeteksi: Monokrom (Preset Siluet Mulus diterapkan)' };
+  } else if (numColors <= 60) {
+    return { preset: 'logo', reason: '✨ Terdeteksi: Logo / Teks (Preset Clean Smooth Curved Vector diterapkan)' };
+  } else if (numColors <= 150) {
+    return { preset: 'illustration', reason: '✨ Terdeteksi: Vektor Kartun & Ilustrasi diterapkan' };
   } else {
-    return { preset: 'photo', reason: '✨ Terdeteksi: Foto Realistis (Preset Foto Detail diterapkan)' };
+    return { preset: 'logo', reason: '✨ Terdeteksi: Logo / Seni Vektor (Preset Clean Smooth Curved Vector diterapkan)' };
   }
 }

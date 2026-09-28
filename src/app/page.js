@@ -28,16 +28,10 @@ export default function Home() {
   const [bgStyle, setBgStyle] = useState('checkerboard');
   const [copied, setCopied] = useState(false);
 
-  // Custom fine-tuning states
+  // Custom fine-tuning states (defaults optimized for smooth curves)
   const [blurRadius, setBlurRadius] = useState(3);
-  const [pathOmit, setPathOmit] = useState(20);
-  const [numberOfColors, setNumberOfColors] = useState(16);
-
-  // Batch states
-  const [batchFiles, setBatchFiles] = useState([]);
-  const [batchProgress, setBatchProgress] = useState(0);
-  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
-  const [zipBlob, setZipBlob] = useState(null);
+  const [pathOmit, setPathOmit] = useState(30);
+  const [numberOfColors, setNumberOfColors] = useState(10);
 
   const handleSingleFileChange = async (e) => {
     const file = e.target.files?.[0];
@@ -72,6 +66,15 @@ export default function Home() {
 
   const handlePresetChange = (newPreset) => {
     setPresetKey(newPreset);
+    
+    // Update sliders according to preset defaults if chosen
+    if (PRESETS[newPreset]) {
+      const opts = PRESETS[newPreset].options;
+      setBlurRadius(opts.blurradius || 3);
+      setPathOmit(opts.pathomit || 30);
+      setNumberOfColors(opts.numberofcolors || 10);
+    }
+
     if (selectedFile) {
       runVectorization(selectedFile, newPreset, newPreset === 'auto' ? null : getCustomParams());
     }
@@ -144,7 +147,7 @@ export default function Home() {
           ✨ VectorCraft Netlify
         </h1>
         <p className="mt-2 text-slate-400 text-lg">
-          Ubah gambar raster (PNG/JPG/WEBP) jadi <strong className="text-slate-200">Vektor SVG Asli Mulus & Tajam</strong> tanpa bintik pecah!
+          Ubah gambar raster (PNG/JPG/WEBP) jadi <strong className="text-slate-200">Vektor SVG Lengkung Mulus & Menyatu</strong>!
         </p>
       </div>
 
@@ -181,18 +184,18 @@ export default function Home() {
           <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm font-semibold text-slate-300 flex items-center gap-1.5">
-                <Sliders className="w-4 h-4 text-purple-400" /> Preset:
+                <Sliders className="w-4 h-4 text-purple-400" /> Mode Preset:
               </span>
               <select
                 value={presetKey}
                 onChange={(e) => handlePresetChange(e.target.value)}
-                className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-purple-500"
+                className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-purple-500 font-medium"
               >
                 <option value="auto">✨ Auto Detect (Rekomendasi)</option>
-                <option value="logo">🌟 Ultra-Smooth Logo & Art</option>
-                <option value="illustration">🎨 Vektor Warna Mulus</option>
-                <option value="photo">📸 Foto Detail</option>
-                <option value="monochrome">⬛ Siluet Monokrom</option>
+                <option value="logo">🌟 Clean Smooth Curved Vector (Logo & Teks)</option>
+                <option value="illustration">🎨 Vektor Kartun & Ilustrasi Warna</option>
+                <option value="photo">📸 Foto & High Detail</option>
+                <option value="monochrome">⬛ Siluet Monokrom Mulus</option>
               </select>
             </div>
 
@@ -224,12 +227,12 @@ export default function Home() {
           {/* Fine Tuning Controls Drawer */}
           <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700/40">
             <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-purple-300">
-              <SlidersHorizontal className="w-4 h-4" /> Fine-Tuning Kehalusan & Warna (Real-Time Slider)
+              <SlidersHorizontal className="w-4 h-4" /> Fine-Tuning Kehalusan Kurva (Real-Time Slider)
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
               <div>
                 <div className="flex justify-between mb-1 text-slate-300">
-                  <span>🌊 Kehalusan Garis (Blur)</span>
+                  <span>🌊 Kehalusan Lengkung Kurva (Blur)</span>
                   <span className="font-bold text-purple-400">{blurRadius} px</span>
                 </div>
                 <input
@@ -240,39 +243,39 @@ export default function Home() {
                   onChange={(e) => { setBlurRadius(Number(e.target.value)); handleSliderChange(); }}
                   className="w-full accent-purple-500 cursor-pointer"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">Nilai lebih tinggi = garis lebih mulus & bebas gerigi.</p>
+                <p className="text-[10px] text-slate-400 mt-1">Nilai 3-4 = membuat garis lengkung mulus & menyatu.</p>
               </div>
 
               <div>
                 <div className="flex justify-between mb-1 text-slate-300">
-                  <span>🧹 Filter Bintik Noise (Hapus Titik Small)</span>
+                  <span>🧹 Filter Bintik Noise (Hapus Titik Kecil)</span>
                   <span className="font-bold text-cyan-400">{pathOmit} px</span>
                 </div>
                 <input
                   type="range"
                   min="0"
-                  max="50"
+                  max="60"
                   value={pathOmit}
                   onChange={(e) => { setPathOmit(Number(e.target.value)); handleSliderChange(); }}
                   className="w-full accent-cyan-500 cursor-pointer"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">Nilai lebih tinggi = menghapus titik-titik bintik pecah.</p>
+                <p className="text-[10px] text-slate-400 mt-1">Nilai 25-40 = menghapus bintik-bintik vektor yang pecah.</p>
               </div>
 
               <div>
                 <div className="flex justify-between mb-1 text-slate-300">
-                  <span>🎨 Jumlah Warna Palette</span>
+                  <span>🎨 Penyederhanaan Warna Palette</span>
                   <span className="font-bold text-teal-400">{numberOfColors} warna</span>
                 </div>
                 <input
                   type="range"
                   min="2"
-                  max="64"
+                  max="32"
                   value={numberOfColors}
                   onChange={(e) => { setNumberOfColors(Number(e.target.value)); handleSliderChange(); }}
                   className="w-full accent-teal-500 cursor-pointer"
                 />
-                <p className="text-[10px] text-slate-400 mt-1">Mengontrol variasi warna vektor.</p>
+                <p className="text-[10px] text-slate-400 mt-1">Nilai 8-12 warna = menyatukan bidang warna logo.</p>
               </div>
             </div>
           </div>
@@ -317,7 +320,7 @@ export default function Home() {
                 <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-4 flex flex-col">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold text-slate-300 flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-cyan-400" /> Hasil Vektor (SVG Mulus)
+                      <Zap className="w-4 h-4 text-cyan-400" /> Hasil Vektor (SVG Lengkung Mulus)
                     </h3>
                     {svgResult && (
                       <div className="flex items-center gap-2">
@@ -344,7 +347,7 @@ export default function Home() {
                     {isProcessing ? (
                       <div className="flex flex-col items-center gap-3 text-slate-400">
                         <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-sm font-medium text-slate-300">Menghasilkan Vektor Mulus...</p>
+                        <p className="text-sm font-medium text-slate-300">Menghasilkan Vektor Lengkung Mulus...</p>
                       </div>
                     ) : svgResult ? (
                       <div
@@ -360,7 +363,7 @@ export default function Home() {
               {stats && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div className="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl">
-                    <p className="text-xs text-slate-400 font-medium">🗺️ Path Vektor</p>
+                    <p className="text-xs text-slate-400 font-medium">🗺️ Path Vektor (Bidang Menyatu)</p>
                     <p className="text-xl font-bold text-purple-300 mt-1">{stats.pathCount.toLocaleString()}</p>
                   </div>
                   <div className="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl">
@@ -373,7 +376,7 @@ export default function Home() {
                   </div>
                   <div className="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl">
                     <p className="text-xs text-slate-400 font-medium">✨ Status Format</p>
-                    <p className="text-xl font-bold text-emerald-400 mt-1">Smooth Native SVG</p>
+                    <p className="text-xl font-bold text-emerald-400 mt-1">Clean Curved SVG</p>
                   </div>
                 </div>
               )}
