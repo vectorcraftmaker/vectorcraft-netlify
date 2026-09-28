@@ -3,7 +3,7 @@ export const PRESETS = {
     name: '🎯 Logo & Typography',
     description: 'Dioptimalkan untuk logo, teks, ikon, dan line art dengan sudut tajam.',
     params: {
-      colorMode: 'color',
+      clustering: 'color-cluster',
       hierarchical: 'stacked',
       mode: 'spline',
       filterSpeckle: 4,
@@ -20,7 +20,7 @@ export const PRESETS = {
     name: '🎨 Grafis & Ilustrasi',
     description: 'Sangat cocok untuk gambar bergaya kartun, seni vektor, dan grafis berwarna.',
     params: {
-      colorMode: 'color',
+      clustering: 'color-cluster',
       hierarchical: 'stacked',
       mode: 'spline',
       filterSpeckle: 6,
@@ -37,7 +37,7 @@ export const PRESETS = {
     name: '📸 Foto Detail',
     description: 'Menangkap detail halus dan gradasi warna alami dari foto realistis.',
     params: {
-      colorMode: 'color',
+      clustering: 'color-cluster',
       hierarchical: 'stacked',
       mode: 'spline',
       filterSpeckle: 2,
@@ -54,7 +54,7 @@ export const PRESETS = {
     name: '⬛ Monokrom / Siluet',
     description: 'Tracing hitam-putih untuk stempel, cap, dan siluet.',
     params: {
-      colorMode: 'binary',
+      clustering: 'binary',
       hierarchical: 'stacked',
       mode: 'spline',
       filterSpeckle: 4,
