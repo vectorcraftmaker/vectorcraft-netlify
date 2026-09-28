@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { convertFileToVector, PRESETS } from '../lib/vtracer';
 import JSZip from 'jszip';
 import { 
@@ -10,11 +10,11 @@ import {
   Copy, 
   Check, 
   Sliders, 
-  Layers, 
   FileArchive, 
   Image as ImageIcon,
   Zap,
-  Globe
+  Globe,
+  SlidersHorizontal
 } from 'lucide-react';
 
 export default function Home() {
@@ -28,13 +28,17 @@ export default function Home() {
   const [bgStyle, setBgStyle] = useState('checkerboard');
   const [copied, setCopied] = useState(false);
 
+  // Custom fine-tuning states
+  const [blurRadius, setBlurRadius] = useState(3);
+  const [pathOmit, setPathOmit] = useState(20);
+  const [numberOfColors, setNumberOfColors] = useState(16);
+
   // Batch states
   const [batchFiles, setBatchFiles] = useState([]);
   const [batchProgress, setBatchProgress] = useState(0);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const [zipBlob, setZipBlob] = useState(null);
 
-  // Single file change
   const handleSingleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -42,13 +46,21 @@ export default function Home() {
     setSelectedFile(file);
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
-    runVectorization(file, presetKey);
+    runVectorization(file, presetKey, getCustomParams());
   };
 
-  const runVectorization = async (file, currentPreset) => {
+  const getCustomParams = () => {
+    return {
+      blurradius: blurRadius,
+      pathomit: pathOmit,
+      numberofcolors: numberOfColors
+    };
+  };
+
+  const runVectorization = async (file, currentPreset, customOpts = null) => {
     setIsProcessing(true);
     try {
-      const res = await convertFileToVector(file, currentPreset);
+      const res = await convertFileToVector(file, currentPreset, customOpts || getCustomParams());
       setSvgResult(res.svg);
       setStats(res.stats);
     } catch (err) {
@@ -61,7 +73,13 @@ export default function Home() {
   const handlePresetChange = (newPreset) => {
     setPresetKey(newPreset);
     if (selectedFile) {
-      runVectorization(selectedFile, newPreset);
+      runVectorization(selectedFile, newPreset, newPreset === 'auto' ? null : getCustomParams());
+    }
+  };
+
+  const handleSliderChange = () => {
+    if (selectedFile) {
+      runVectorization(selectedFile, presetKey === 'auto' ? 'logo' : presetKey, getCustomParams());
     }
   };
 
@@ -85,7 +103,6 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
-  // Batch conversion
   const handleBatchFileChange = (e) => {
     const files = Array.from(e.target.files || []);
     setBatchFiles(files);
@@ -102,7 +119,7 @@ export default function Home() {
     for (let i = 0; i < batchFiles.length; i++) {
       const file = batchFiles[i];
       try {
-        const res = await convertFileToVector(file, 'auto');
+        const res = await convertFileToVector(file, 'auto', getCustomParams());
         const filename = `${file.name.replace(/\.[^/.]+$/, '')}_vector.svg`;
         zip.file(filename, res.svg);
       } catch (err) {
@@ -121,13 +138,13 @@ export default function Home() {
       {/* Header */}
       <div className="text-center mb-10">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-sm font-medium mb-3">
-          <Globe className="w-4 h-4" /> 100% WebAssembly Client-Side & Netlify Ready
+          <Globe className="w-4 h-4" /> 100% Client-Side WebAssembly & Netlify Ready
         </div>
         <h1 className="text-4xl sm:text-5xl font-extrabold bg-gradient-to-r from-purple-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
           ✨ VectorCraft Netlify
         </h1>
         <p className="mt-2 text-slate-400 text-lg">
-          Ubah gambar raster (PNG/JPG/WEBP) jadi <strong className="text-slate-200">Vektor SVG Asli</strong> langsung di browser tanpa server!
+          Ubah gambar raster (PNG/JPG/WEBP) jadi <strong className="text-slate-200">Vektor SVG Asli Mulus & Tajam</strong> tanpa bintik pecah!
         </p>
       </div>
 
@@ -164,7 +181,7 @@ export default function Home() {
           <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm font-semibold text-slate-300 flex items-center gap-1.5">
-                <Sliders className="w-4 h-4 text-purple-400" /> Mode Preset:
+                <Sliders className="w-4 h-4 text-purple-400" /> Preset:
               </span>
               <select
                 value={presetKey}
@@ -172,10 +189,10 @@ export default function Home() {
                 className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-purple-500"
               >
                 <option value="auto">✨ Auto Detect (Rekomendasi)</option>
-                <option value="logo">🎯 Logo & Typography</option>
-                <option value="illustration">🎨 Grafis & Ilustrasi</option>
+                <option value="logo">🌟 Ultra-Smooth Logo & Art</option>
+                <option value="illustration">🎨 Vektor Warna Mulus</option>
                 <option value="photo">📸 Foto Detail</option>
-                <option value="monochrome">⬛ Monokrom / Siluet</option>
+                <option value="monochrome">⬛ Siluet Monokrom</option>
               </select>
             </div>
 
@@ -204,6 +221,62 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Fine Tuning Controls Drawer */}
+          <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700/40">
+            <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-purple-300">
+              <SlidersHorizontal className="w-4 h-4" /> Fine-Tuning Kehalusan & Warna (Real-Time Slider)
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
+              <div>
+                <div className="flex justify-between mb-1 text-slate-300">
+                  <span>🌊 Kehalusan Garis (Blur)</span>
+                  <span className="font-bold text-purple-400">{blurRadius} px</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  value={blurRadius}
+                  onChange={(e) => { setBlurRadius(Number(e.target.value)); handleSliderChange(); }}
+                  className="w-full accent-purple-500 cursor-pointer"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">Nilai lebih tinggi = garis lebih mulus & bebas gerigi.</p>
+              </div>
+
+              <div>
+                <div className="flex justify-between mb-1 text-slate-300">
+                  <span>🧹 Filter Bintik Noise (Hapus Titik Small)</span>
+                  <span className="font-bold text-cyan-400">{pathOmit} px</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="50"
+                  value={pathOmit}
+                  onChange={(e) => { setPathOmit(Number(e.target.value)); handleSliderChange(); }}
+                  className="w-full accent-cyan-500 cursor-pointer"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">Nilai lebih tinggi = menghapus titik-titik bintik pecah.</p>
+              </div>
+
+              <div>
+                <div className="flex justify-between mb-1 text-slate-300">
+                  <span>🎨 Jumlah Warna Palette</span>
+                  <span className="font-bold text-teal-400">{numberOfColors} warna</span>
+                </div>
+                <input
+                  type="range"
+                  min="2"
+                  max="64"
+                  value={numberOfColors}
+                  onChange={(e) => { setNumberOfColors(Number(e.target.value)); handleSliderChange(); }}
+                  className="w-full accent-teal-500 cursor-pointer"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">Mengontrol variasi warna vektor.</p>
+              </div>
+            </div>
+          </div>
+
           {/* Upload Dropzone */}
           {!selectedFile && (
             <label className="border-2 border-dashed border-slate-700 hover:border-purple-500/60 transition-all rounded-2xl p-12 text-center flex flex-col items-center justify-center cursor-pointer bg-slate-800/20 hover:bg-slate-800/40">
@@ -214,7 +287,7 @@ export default function Home() {
             </label>
           )}
 
-          {/* Processing Spinner & Results */}
+          {/* Results */}
           {selectedFile && (
             <div className="space-y-6">
               {stats?.detectedReason && (
@@ -244,7 +317,7 @@ export default function Home() {
                 <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-4 flex flex-col">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold text-slate-300 flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-cyan-400" /> Hasil Vektor (SVG)
+                      <Zap className="w-4 h-4 text-cyan-400" /> Hasil Vektor (SVG Mulus)
                     </h3>
                     {svgResult && (
                       <div className="flex items-center gap-2">
@@ -271,7 +344,7 @@ export default function Home() {
                     {isProcessing ? (
                       <div className="flex flex-col items-center gap-3 text-slate-400">
                         <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-sm font-medium text-slate-300">Mengonversi via WASM...</p>
+                        <p className="text-sm font-medium text-slate-300">Menghasilkan Vektor Mulus...</p>
                       </div>
                     ) : svgResult ? (
                       <div
@@ -291,7 +364,7 @@ export default function Home() {
                     <p className="text-xl font-bold text-purple-300 mt-1">{stats.pathCount.toLocaleString()}</p>
                   </div>
                   <div className="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl">
-                    <p className="text-xs text-slate-400 font-medium">📍 Curve Nodes</p>
+                    <p className="text-xs text-slate-400 font-medium">📍 Node Curves</p>
                     <p className="text-xl font-bold text-cyan-300 mt-1">{stats.nodeCommands.toLocaleString()}</p>
                   </div>
                   <div className="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl">
@@ -299,8 +372,8 @@ export default function Home() {
                     <p className="text-xl font-bold text-teal-300 mt-1">{stats.fileSizeFormatted}</p>
                   </div>
                   <div className="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl">
-                    <p className="text-xs text-slate-400 font-medium">✨ Output Format</p>
-                    <p className="text-xl font-bold text-emerald-400 mt-1">Native SVG</p>
+                    <p className="text-xs text-slate-400 font-medium">✨ Status Format</p>
+                    <p className="text-xl font-bold text-emerald-400 mt-1">Smooth Native SVG</p>
                   </div>
                 </div>
               )}
@@ -315,7 +388,7 @@ export default function Home() {
           <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-6">
             <h3 className="text-xl font-bold text-slate-200 mb-2">📦 Konversi Banyak Gambar Sekaligus (Batch Process)</h3>
             <p className="text-slate-400 text-sm mb-6">
-              Upload belasan atau puluhan gambar sekaligus. Semua file akan dikonversi di browser menggunakan WebAssembly dan dapat didownload dalam 1 file <strong>.ZIP</strong>.
+              Upload belasan atau puluhan gambar sekaligus. Semua file akan dikonversi di browser dan dapat didownload dalam 1 file <strong>.ZIP</strong>.
             </p>
 
             <label className="border-2 border-dashed border-slate-700 hover:border-purple-500/60 transition-all rounded-xl p-8 text-center flex flex-col items-center justify-center cursor-pointer bg-slate-900/50 mb-6">

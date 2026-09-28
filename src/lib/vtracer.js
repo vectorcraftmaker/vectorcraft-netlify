@@ -2,84 +2,92 @@ import ImageTracer from 'imagetracerjs';
 
 export const PRESETS = {
   logo: {
-    name: '🎯 Logo & Typography',
-    description: 'Dioptimalkan untuk logo, teks, ikon, dan line art dengan garis tajam & bersih.',
+    name: '🌟 Ultra-Smooth Logo & Art (Rekomendasi Utama)',
+    description: 'Menghasilkan garis vektor super mulus, tajam, dan bebas bintik pecah.',
     options: {
       corsenabled: false,
-      ltres: 0.5,
-      qtres: 0.5,
-      pathomit: 4,
+      ltres: 1,
+      qtres: 1,
+      pathomit: 20,
       rightangleenhance: true,
       colorsampling: 2,
       numberofcolors: 16,
       mincolorratio: 0,
       colorquantcycles: 3,
       layering: 0,
-      strokewidth: 0.5,
-      linefilter: false,
-      scale: 1,
-      roundcoords: 2,
-      viewbox: true,
-    }
-  },
-  illustration: {
-    name: '🎨 Grafis & Ilustrasi',
-    description: 'Sangat cocok untuk gambar bergaya kartun, seni vektor, dan grafis berwarna.',
-    options: {
-      corsenabled: false,
-      ltres: 1,
-      qtres: 1,
-      pathomit: 8,
-      rightangleenhance: false,
-      colorsampling: 2,
-      numberofcolors: 32,
-      colorquantcycles: 3,
-      layering: 0,
-      strokewidth: 1,
-      linefilter: false,
+      strokewidth: 0,
+      linefilter: true,
       scale: 1,
       roundcoords: 1,
       viewbox: true,
+      blurradius: 3,
+      blurdelta: 30
+    }
+  },
+  illustration: {
+    name: '🎨 Vektor Warna Mulus',
+    description: 'Sangat cocok untuk ilustrasi warna, kartun, dan grafis bergaya seni.',
+    options: {
+      corsenabled: false,
+      ltres: 0.8,
+      qtres: 0.8,
+      pathomit: 12,
+      rightangleenhance: false,
+      colorsampling: 2,
+      numberofcolors: 24,
+      colorquantcycles: 3,
+      layering: 0,
+      strokewidth: 0,
+      linefilter: true,
+      scale: 1,
+      roundcoords: 1,
+      viewbox: true,
+      blurradius: 2,
+      blurdelta: 20
     }
   },
   photo: {
-    name: '📸 Foto Detail',
-    description: 'Menangkap detail halus dan gradasi warna alami dari foto realistis.',
+    name: '📸 Foto & High Detail',
+    description: 'Menangkap detail warna realistis dengan kurva halus.',
     options: {
       corsenabled: false,
-      ltres: 0.2,
-      qtres: 0.2,
-      pathomit: 0,
+      ltres: 0.3,
+      qtres: 0.3,
+      pathomit: 4,
       rightangleenhance: false,
       colorsampling: 2,
-      numberofcolors: 64,
+      numberofcolors: 48,
       colorquantcycles: 4,
-      layering: 0,
-      strokewidth: 0.5,
-      linefilter: false,
-      scale: 1,
-      roundcoords: 2,
-      viewbox: true,
-    }
-  },
-  monochrome: {
-    name: '⬛ Monokrom / Siluet',
-    description: 'Tracing hitam-putih untuk stempel, cap, dan siluet.',
-    options: {
-      corsenabled: false,
-      ltres: 0.1,
-      qtres: 0.1,
-      pathomit: 4,
-      rightangleenhance: true,
-      colorsampling: 0,
-      numberofcolors: 2,
-      colorquantcycles: 2,
       layering: 0,
       strokewidth: 0,
       linefilter: false,
       scale: 1,
       roundcoords: 1,
       viewbox: true,
+      blurradius: 1,
+      blurdelta: 15
+    }
+  },
+  monochrome: {
+    name: '⬛ Siluet Monokrom',
+    description: 'Tracing hitam-putih mulus untuk cap, logo 1 warna, dan stempel.',
+    options: {
+      corsenabled: false,
+      ltres: 0.5,
+      qtres: 0.5,
+      pathomit: 20,
+      rightangleenhance: true,
+      colorsampling: 0,
+      numberofcolors: 2,
+      colorquantcycles: 2,
+      layering: 0,
+      strokewidth: 0,
+      linefilter: true,
+      scale: 1,
+      roundcoords: 1,
+      viewbox: true,
+      blurradius: 2,
+      blurdelta: 20
     }
   }
 };
@@ -116,7 +124,7 @@ export async function convertFileToVector(file, presetKey = 'auto', customParams
         const baseOpts = PRESETS[finalPresetKey] ? PRESETS[finalPresetKey].options : PRESETS.logo.options;
         const finalOptions = { ...baseOpts, ...customParams };
 
-        // Execute ImageTracerJS pure JS vectorization
+        // Execute ImageTracerJS vectorization
         const svgContent = ImageTracer.imagedataToSVG(imageData, finalOptions);
 
         // Analyze SVG statistics
@@ -169,12 +177,12 @@ function autoDetectFromImageData(imageData) {
 
   const numColors = colorMap.size;
   if (numColors <= 4) {
-    return { preset: 'monochrome', reason: '✨ Terdeteksi: Gambar Monokrom / Hitam-Putih (Setting Monokrom diterapkan)' };
+    return { preset: 'monochrome', reason: '✨ Terdeteksi: Gambar Monokrom / Hitam-Putih (Preset Mulus Monokrom diterapkan)' };
   } else if (numColors <= 32) {
-    return { preset: 'logo', reason: '✨ Terdeteksi: Logo / Teks / Graphic Icon (Setting Tajam Logo diterapkan)' };
+    return { preset: 'logo', reason: '✨ Terdeteksi: Logo / Teks (Preset Ultra-Smooth Logo diterapkan)' };
   } else if (numColors <= 128) {
-    return { preset: 'illustration', reason: '✨ Terdeteksi: Vektor Grafis / Ilustrasi (Setting Layer Warna diterapkan)' };
+    return { preset: 'illustration', reason: '✨ Terdeteksi: Vektor Grafis / Ilustrasi (Preset Vektor Warna Mulus diterapkan)' };
   } else {
-    return { preset: 'photo', reason: '✨ Terdeteksi: Foto Realistis / Gradasi Halus (Setting Foto Detail diterapkan)' };
+    return { preset: 'photo', reason: '✨ Terdeteksi: Foto Realistis (Preset Foto Detail diterapkan)' };
   }
 }
