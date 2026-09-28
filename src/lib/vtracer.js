@@ -69,110 +69,102 @@ export const PRESETS = {
   }
 };
 
-export function autoDetectPresetFromImageData(imageData) {
-  const { data, width, height } = imageData;
-  const totalPixels = width * height;
-  const colorMap = new Set();
-  
-  const step = Math.max(1, Math.floor(totalPixels / 10000));
-  for (let i = 0; i < data.length; i += 4 * step) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    const key = `${r >> 3},${g >> 3},${b >> 3}`;
-    colorMap.add(key);
-  }
+let tracerInstance = null;
 
-  const numColors = colorMap.size;
-
-  if (numColors <= 4) {
-    return {
-      preset: 'monochrome',
-      reason: '✨ Terdeteksi: Gambar Monokrom / Hitam-Putih (Setting Hitam-Putih diterapkan)'
-    };
-  } else if (numColors <= 32) {
-    return {
-      preset: 'logo',
-      reason: '✨ Terdeteksi: Logo / Teks / Graphic Icon (Setting Tajam Logo diterapkan)'
-    };
-  } else if (numColors <= 128) {
-    return {
-      preset: 'illustration',
-      reason: '✨ Terdeteksi: Vektor Grafis / Ilustrasi (Setting Layer Warna diterapkan)'
-    };
-  } else {
-    return {
-      preset: 'photo',
-      reason: '✨ Terdeteksi: Foto Realistis / Gradasi Halus (Setting Foto Detail diterapkan)'
-    };
+async function getTracer() {
+  if (typeof window === 'undefined') return null;
+  if (!tracerInstance) {
+    const { createVTracer } = await import('vtracer-browser');
+    tracerInstance = createVTracer();
   }
+  return tracerInstance;
 }
 
 export async function convertFileToVector(file, presetKey = 'auto', customParams = {}) {
-  // Dynamically import WASM module client-side
-  const { convertPixels } = await import('@visioncortex/vtracer');
+  const tracer = await getTracer();
+  if (!tracer) {
+    throw new Error('VTracer browser engine only runs on client side.');
+  }
 
-  return new Promise((resolve, reject) => {
+  let finalPresetKey = presetKey;
+  let detectedReason = '';
+
+  if (presetKey === 'auto' || !PRESETS[presetKey]) {
+    const autoRes = await autoDetectFromFile(file);
+    finalPresetKey = autoRes.preset;
+    detectedReason = autoRes.reason;
+  }
+
+  const baseParams = PRESETS[finalPresetKey] ? PRESETS[finalPresetKey].params : PRESETS.logo.params;
+  const finalParams = { ...baseParams, ...customParams };
+
+  // Run vectorization using Web Worker
+  const svgContent = await tracer.convert(file, finalParams);
+
+  // Analyze SVG statistics
+  const pathMatches = svgContent.match(/<path[^>]*>/gi) || [];
+  const commandMatches = svgContent.match(/[MmLlHhVvCcSsQqTtAaZz]/g) || [];
+  const sizeBytes = new Blob([svgContent]).size;
+  const sizeFormatted = sizeBytes < 1024 
+    ? `${sizeBytes} B` 
+    : sizeBytes < 1024 * 1024 
+      ? `${(sizeBytes / 1024).toFixed(1)} KB` 
+      : `${(sizeBytes / (1024 * 1024)).toFixed(2)} MB`;
+
+  return {
+    svg: svgContent,
+    stats: {
+      pathCount: pathMatches.length,
+      nodeCommands: commandMatches.length,
+      fileSizeBytes: sizeBytes,
+      fileSizeFormatted: sizeFormatted,
+      detectedPreset: finalPresetKey,
+      detectedReason: detectedReason
+    }
+  };
+}
+
+async function autoDetectFromFile(file) {
+  return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
-
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = Math.min(img.width, 150);
+        canvas.height = Math.min(img.height, 150);
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        const imageData = ctx.getImageData(0, 0, img.width, img.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         URL.revokeObjectURL(url);
 
-        let finalPresetKey = presetKey;
-        let detectedReason = '';
-
-        if (presetKey === 'auto' || !PRESETS[presetKey]) {
-          const autoRes = autoDetectPresetFromImageData(imageData);
-          finalPresetKey = autoRes.preset;
-          detectedReason = autoRes.reason;
+        const colorMap = new Set();
+        for (let i = 0; i < imageData.data.length; i += 4) {
+          const r = imageData.data[i];
+          const g = imageData.data[i + 1];
+          const b = imageData.data[i + 2];
+          colorMap.add(`${r >> 3},${g >> 3},${b >> 3}`);
         }
 
-        const baseParams = PRESETS[finalPresetKey] ? PRESETS[finalPresetKey].params : PRESETS.logo.params;
-        const finalParams = { ...baseParams, ...customParams };
-
-        // Execute WASM vectorization
-        const svgContent = convertPixels(imageData.data, imageData.width, imageData.height, finalParams);
-
-        // Analyze SVG statistics
-        const pathMatches = svgContent.match(/<path[^>]*>/gi) || [];
-        const commandMatches = svgContent.match(/[MmLlHhVvCcSsQqTtAaZz]/g) || [];
-        const sizeBytes = new Blob([svgContent]).size;
-        const sizeFormatted = sizeBytes < 1024 
-          ? `${sizeBytes} B` 
-          : sizeBytes < 1024 * 1024 
-            ? `${(sizeBytes / 1024).toFixed(1)} KB` 
-            : `${(sizeBytes / (1024 * 1024)).toFixed(2)} MB`;
-
-        resolve({
-          svg: svgContent,
-          stats: {
-            pathCount: pathMatches.length,
-            nodeCommands: commandMatches.length,
-            fileSizeBytes: sizeBytes,
-            fileSizeFormatted: sizeFormatted,
-            detectedPreset: finalPresetKey,
-            detectedReason: detectedReason
-          }
-        });
+        const numColors = colorMap.size;
+        if (numColors <= 4) {
+          resolve({ preset: 'monochrome', reason: '✨ Terdeteksi: Gambar Monokrom / Hitam-Putih (Setting Hitam-Putih diterapkan)' });
+        } else if (numColors <= 32) {
+          resolve({ preset: 'logo', reason: '✨ Terdeteksi: Logo / Teks / Graphic Icon (Setting Tajam Logo diterapkan)' });
+        } else if (numColors <= 128) {
+          resolve({ preset: 'illustration', reason: '✨ Terdeteksi: Vektor Grafis / Ilustrasi (Setting Layer Warna diterapkan)' });
+        } else {
+          resolve({ preset: 'photo', reason: '✨ Terdeteksi: Foto Realistis / Gradasi Halus (Setting Foto Detail diterapkan)' });
+        }
       } catch (err) {
-        reject(err);
+        URL.revokeObjectURL(url);
+        resolve({ preset: 'logo', reason: '✨ Terdeteksi: Logo / Teks (Setting Default diterapkan)' });
       }
     };
-
-    img.onerror = (err) => {
+    img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error('Gagal membaca berkas gambar.'));
+      resolve({ preset: 'logo', reason: '✨ Terdeteksi: Logo / Teks (Setting Default diterapkan)' });
     };
-
     img.src = url;
   });
 }
